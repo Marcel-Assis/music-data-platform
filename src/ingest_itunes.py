@@ -1,29 +1,34 @@
-# Script para ingestão de dados da API do iTunes
-
+# src/ingest_itunes.py
 import requests
-import json
-import csv
-
-# Fazendo uma requisição GET para a API do iTunes
+# Fazer uma requisição à API do iTunes para buscar músicas de um artista específico
 url = "https://itunes.apple.com/search"
 params = {"term": "coldplay", "limit": 2, "media": "music"}
+
 response = requests.get(url, params=params)
+data = response.json()
 
-print(response.status_code)
-print(response.json())
+print(data.keys())  # mostra as chaves principais do JSON
 
-# Salvando os dados em arquivos JSON bruto
-data = {"artist": "Coldplay", "track": "Yellow"}
+import json
+# Salvar os dados brutos em um arquivo JSON
+with open("data/raw/itunes_data.json", "w", encoding="utf-8") as file:
+    json.dump(data, file, indent=2, ensure_ascii=False)
 
-with open("data/raw/itunes_data.json", "w") as file:
-    json.dump(data, file, indent=2)
+    import csv
 
-rows = [
-    {"track": "Yellow", "artist": "Coldplay"},
-    {"track": "Fix You", "artist": "Coldplay"},
-]
-# Salvar os dados processados em CSV processados
-with open("data/processed/itunes_data.csv", "w", newline='') as file:
-    writer = csv.DictWriter(file, fieldnames=["track", "artist"])
+results = data["results"]
+# Processar os dados e salvar em um arquivo CSV
+rows = []
+for item in results:
+    rows.append({
+        "trackName": item.get("trackName"),
+        "artistName": item.get("artistName"),
+        "collectionName": item.get("collectionName"),
+        "releaseDate": item.get("releaseDate"),
+        "primaryGenreName": item.get("primaryGenreName")
+    })
+
+with open("data/processed/itunes_data.csv", "w", newline="", encoding="utf-8") as file:
+    writer = csv.DictWriter(file, fieldnames=rows[0].keys())
     writer.writeheader()
     writer.writerows(rows)
